@@ -21,6 +21,8 @@ class Boat:
         self.angular_velocity = initial_angular_velocity
         self.env = env
         self.other_ship_dist = -1
+        self.max_ship_spd = 10
+        self.min_ship_spd = -5
 
     def step(self, action):
         if action == Boat.INC_SPD:
