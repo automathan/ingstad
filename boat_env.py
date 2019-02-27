@@ -14,27 +14,36 @@ class Boat:
     def __init__(self, pos, env, initial_speed=0, initial_acceleration=0, initial_direction=0, initial_angular_velocity=0, wrap=True):
         self.x = pos[0]
         self.y = pos[1]
-        self.length = 96
+        self.length = 96 * 2
         self.speed = initial_speed
         self.acceleration = initial_acceleration
         self.direction = initial_direction
         self.angular_velocity = initial_angular_velocity
         self.env = env
         self.other_ship_dist = -1
-        self.max_ship_spd = 10
-        self.min_ship_spd = -5
+        self.max_ship_spd = 8
+        self.min_ship_spd = -3
+        self.max_ang_vel = 2
         self.show_circles = False
-        self.goal_position = (0, 0)
-        self.state = [0.0, 0.0, 0.0, 0.0]
-        self.wrap = wrap
+        self.goal_position = (300, 300)
+        
+        self.state = [self.x / self.env.dimensions[0], self.y / self.env.dimensions[1], math.radians(self.direction), self.speed / self.max_ship_spd]
+        # [speed, angular velocity, angular goal offset, angular other ship offset]
+        # angular offset: how many radians away from heading straight towards a target [-pi, pi], negative is CW
+
+        self.wrap = wrap # wrap is practical for not going offscreen when using a human agent, but should be penalized in training
 
     def step(self, action):
         done = False
 
-        if action == Boat.INC_SPD:  self.speed += 0.1
-        if action == Boat.DEC_SPD:  self.speed -= 0.1
-        if action == Boat.TURN_CCW: self.angular_velocity += 0.1
-        if action == Boat.TURN_CW:  self.angular_velocity -= 0.1
+        if action == Boat.INC_SPD and self.speed < self.max_ship_spd:
+            self.speed += 0.1
+        if action == Boat.DEC_SPD and self.speed > self.min_ship_spd:
+            self.speed -= 0.1
+        if action == Boat.TURN_CCW and self.angular_velocity < self.max_ang_vel:
+            self.angular_velocity += 0.1
+        if action == Boat.TURN_CW and self.angular_velocity > -self.max_ang_vel:
+            self.angular_velocity -= 0.1
 
         self.x += self.speed * math.cos(math.radians(self.direction))
         self.y += self.speed * -math.sin(math.radians(self.direction))
@@ -51,17 +60,18 @@ class Boat:
             if self.y > self.env.dimensions[1]: done = True
         
         self.speed += self.acceleration
-        self.direction += self.angular_velocity
+        self.direction = (self.direction + self.angular_velocity) % 360
         
         self.other_ship_dist = math.sqrt((self.env.boat1.x - self.env.boat2.x) ** 2 + (self.env.boat1.y - self.env.boat2.y) ** 2)
         dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
         
-        self.state = [self.x / self.env.dimensions[0], self.y / self.env.dimensions[1], 0.0, 0.0]
+
+        self.state = [self.x / self.env.dimensions[0], self.y / self.env.dimensions[1], math.radians(self.direction), self.speed / self.max_ship_spd]
         reward = -1
         
-        if dist_to_goal < 200:
-            reward = 10
-
+        if dist_to_goal < 50:
+            reward = 100
+        
         return self.state, reward, done, {}
 
     def draw(self, screen):
@@ -77,6 +87,8 @@ class Boat:
             pg.draw.circle(screen, (255, 187, 0), (int(self.x), int(self.y)), self.length * 2, 1)
             pg.draw.circle(screen, (255, 250, 0), (int(self.x), int(self.y)), self.length * 4, 1)
         
+        pg.draw.circle(screen, (0, 255, 0), (int(self.goal_position[0]), int(self.goal_position[1])), 50, 1)
+
         # line to other ship
         pg.draw.line(screen, (255, 0, 0), (self.env.boat1.x, self.env.boat1.y), (self.env.boat2.x, self.env.boat2.y))
         
@@ -94,8 +106,6 @@ class ActionSpace(list):
 
 class BoatEnvironment:
     def __init__(self, dimensions, screen):
-        self.boat1 = Boat((dimensions[0] // 2, dimensions[1] // 2), self, initial_speed=2, initial_angular_velocity=1, wrap=False)
-        self.boat2 = Boat((dimensions[0] // 2, dimensions[1] // 2), self, initial_speed=2, initial_angular_velocity=-1)
         self.dimensions = dimensions
         self.action_space = ActionSpace([
             Boat.NOP,
@@ -106,12 +116,17 @@ class BoatEnvironment:
         ])
         self.observation_space = np.ndarray((4))
         self.screen = screen
+        
+        #self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, initial_speed=0, initial_angular_velocity=0, wrap=False)
+        self.boat1 = Boat((np.random.uniform(high=self.dimensions[0]), np.random.uniform(high=self.dimensions[1])), self, initial_speed=0, initial_angular_velocity=0, wrap=False)
+        self.boat2 = Boat((dimensions[0] // 2, dimensions[1] // 2), self, initial_speed=0, initial_angular_velocity=0)
 
     def step(self, action):
         return self.boat1.step(action)
 
     def reset(self):
-        self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, initial_speed=2, initial_angular_velocity=1)
+        #self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, initial_speed=0, initial_angular_velocity=0, wrap=False)
+        self.boat1 = Boat((np.random.uniform(high=self.dimensions[0]), np.random.uniform(high=self.dimensions[1])), self, initial_speed=0, initial_angular_velocity=0, wrap=False)
         return self.boat1.state
 
     def render(self):
@@ -127,6 +142,27 @@ class BoatEnvironment:
         for i in range(self.dimensions[1] // 32):
             pg.draw.line(screen, (36, 54, 125), (0, i * 32), (self.dimensions[0], i * 32))
 
+        """
+        #vtarget=np.array([500,400])
+        vtarget=np.array([int(self.boat1.x),int(self.boat1.y)])
+        vboat=np.array([self.boat2.x,self.boat2.y])
+        vdesired = vtarget-vboat
+        #print(vdesired)
+        thetaboat=math.atan2(math.sin(self.boat2.direction*math.pi/180),math.cos(self.boat2.direction*math.pi/180))*180/math.pi
+        thetatarget=math.atan2(vdesired[1],vdesired[0])*180/math.pi
+        
+        thetadesired=thetatarget+thetaboat
+        if math.fabs(thetadesired)>math.fabs(thetadesired+360):
+            thetadesired=thetadesired+360
+        if math.fabs(thetadesired)>math.fabs(thetadesired-360):
+            thetadesired=thetadesired-360
+        thetadesired=-thetadesired
+
+        pg.draw.circle(screen, (255, 250, 0), vtarget, 10, 1)
+        print(int(thetaboat),int(thetatarget))
+        """
+
+        print(math.radians(self.boat1.direction), math.radians(self.boat2.direction))
         # boats
         self.boat1.draw(screen)
         self.boat2.draw(screen)
