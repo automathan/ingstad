@@ -9,6 +9,27 @@ imagerect = myimage.get_rect()
 font = pgft.SysFont('Comic Sans MS', 28)
 excl_mark, _ = font.render('!!!', (255, 0, 0))
 
+def angular_offset(boat, target):
+    vtarget = np.array([int(target[0]), int(target[1])])
+        
+    vboat = np.array([boat.x, boat.y])
+        
+    vdesired = vtarget - vboat
+        
+    thetaboat = math.atan2(math.sin(math.radians(boat.direction)), math.cos(math.radians(boat.direction)))
+    thetatarget = math.atan2(vdesired[1], vdesired[0])
+    thetadesired = math.degrees(thetatarget + thetaboat)
+        
+    if math.fabs(thetadesired) > math.fabs(thetadesired + 360):
+        thetadesired += 360
+        
+    if math.fabs(thetadesired) > math.fabs(thetadesired - 360):
+        thetadesired -= 360
+        
+    thetadesired = -thetadesired
+
+    return int(thetadesired)
+
 class Boat:
     NOP, TURN_CW, TURN_CCW, INC_SPD, DEC_SPD = range(5)
     def __init__(self, pos, env, initial_speed=0, initial_acceleration=0, initial_direction=0, initial_angular_velocity=0, wrap=True):
@@ -27,7 +48,11 @@ class Boat:
         self.show_circles = False
         self.goal_position = (300, 300)
         
-        self.state = [self.x / self.env.dimensions[0], self.y / self.env.dimensions[1], math.radians(self.direction), self.speed / self.max_ship_spd]
+        dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
+        off = angular_offset(self, self.goal_position)
+
+        self.state = [self.speed / self.max_ship_spd, self.angular_velocity / self.max_ang_vel, off / 180, dist_to_goal / self.env.dimensions[0]]
+
         # [speed, angular velocity, angular goal offset, angular other ship offset]
         # angular offset: how many radians away from heading straight towards a target [-pi, pi], negative is CW
 
@@ -63,11 +88,15 @@ class Boat:
         self.direction = (self.direction + self.angular_velocity) % 360
         
         self.other_ship_dist = math.sqrt((self.env.boat1.x - self.env.boat2.x) ** 2 + (self.env.boat1.y - self.env.boat2.y) ** 2)
-        dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
         
+        dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
+        off = angular_offset(self, self.goal_position)
 
-        self.state = [self.x / self.env.dimensions[0], self.y / self.env.dimensions[1], math.radians(self.direction), self.speed / self.max_ship_spd]
-        reward = -1
+        self.state = [self.speed / self.max_ship_spd, self.angular_velocity / self.max_ang_vel, off / 180, dist_to_goal / self.env.dimensions[0]]        
+
+        #print(self.state)
+        #self.state = [self.x / self.env.dimensions[0], self.y / self.env.dimensions[1], math.radians(self.direction), self.speed / self.max_ship_spd]
+        reward = 0#-1
         
         if dist_to_goal < 50:
             reward = 100
@@ -125,8 +154,8 @@ class BoatEnvironment:
         return self.boat1.step(action)
 
     def reset(self):
-        #self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, initial_speed=0, initial_angular_velocity=0, wrap=False)
-        self.boat1 = Boat((np.random.uniform(high=self.dimensions[0]), np.random.uniform(high=self.dimensions[1])), self, initial_speed=0, initial_angular_velocity=0, wrap=False)
+        self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, wrap=False)#, initial_direction=np.random.uniform(0, 360))
+        #self.boat1 = Boat((np.random.uniform(high=self.dimensions[0]), np.random.uniform(high=self.dimensions[1])), self, initial_speed=0, initial_direction=np.random.uniform(0, 360), initial_angular_velocity=0, wrap=False)
         return self.boat1.state
 
     def render(self):
@@ -144,25 +173,33 @@ class BoatEnvironment:
 
         """
         #vtarget=np.array([500,400])
-        vtarget=np.array([int(self.boat1.x),int(self.boat1.y)])
-        vboat=np.array([self.boat2.x,self.boat2.y])
-        vdesired = vtarget-vboat
-        #print(vdesired)
-        thetaboat=math.atan2(math.sin(self.boat2.direction*math.pi/180),math.cos(self.boat2.direction*math.pi/180))*180/math.pi
-        thetatarget=math.atan2(vdesired[1],vdesired[0])*180/math.pi
+        vtarget = np.array([int(self.boat1.x), int(self.boat1.y)])
         
-        thetadesired=thetatarget+thetaboat
-        if math.fabs(thetadesired)>math.fabs(thetadesired+360):
-            thetadesired=thetadesired+360
-        if math.fabs(thetadesired)>math.fabs(thetadesired-360):
-            thetadesired=thetadesired-360
-        thetadesired=-thetadesired
+        vboat = np.array([self.boat2.x, self.boat2.y])
+        
+        vdesired = vtarget - vboat
+        
+        #print(vdesired)
+        
+        thetaboat = math.atan2(math.sin(math.radians(self.boat2.direction)), math.cos(math.radians(self.boat2.direction)))
+        thetatarget = math.atan2(vdesired[1], vdesired[0])
+        thetadesired = math.degrees(thetatarget + thetaboat)
+        
+        if math.fabs(thetadesired) > math.fabs(thetadesired + 360):
+            thetadesired += 360
+        
+        if math.fabs(thetadesired) > math.fabs(thetadesired - 360):
+            thetadesired -= 360
+        
+        thetadesired = -thetadesired
 
         pg.draw.circle(screen, (255, 250, 0), vtarget, 10, 1)
-        print(int(thetaboat),int(thetatarget))
+
+        print(int(thetaboat),int(thetatarget), int(thetadesired), int(self.boat2.direction))
         """
 
-        print(math.radians(self.boat1.direction), math.radians(self.boat2.direction))
+        #print(angular_offset(self.boat1, self.boat2), angular_offset(self.boat2, self.boat1))
+        #print(math.radians(self.boat1.direction), math.radians(self.boat2.direction))
         # boats
         self.boat1.draw(screen)
         self.boat2.draw(screen)

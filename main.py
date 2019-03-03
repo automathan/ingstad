@@ -27,17 +27,17 @@ boat1_state = [0, 0]
 boat2_policy = KeyboardPolicy(Boat.NOP, up=Boat.INC_SPD, down=Boat.DEC_SPD, left=Boat.TURN_CCW, right=Boat.TURN_CW)
 boat2_state = [0, 0]
 
-spec = NetworkSpecification(hidden_layer_sizes=[16], activation_function=nn.Sigmoid)
-dqn = DQN(env, spec, render=False, epsilon=0.4, alpha=0.01, memory_length=500)
+spec = NetworkSpecification(hidden_layer_sizes=[8, 6], activation_function=nn.Sigmoid)
+dqn = DQN(env, spec, render=False, epsilon=0.2, alpha=0.01, memory_length=500)
 
 batch_size = 16
-num_episodes = 5000
-training_iter = 50
-completion_reward = -10
+num_episodes = 500
+training_iter = 200
+completion_reward = 0
 
 print('training...')
 dqn.train(num_episodes, batch_size, training_iter, verbose=True, completion_reward=completion_reward, plot=True, eps_decay=False)
-boat1_policy = dqn.copy_target_policy()#verbose=True)
+boat1_policy = dqn.copy_target_policy(verbose=True)
 
 state = env.reset()
 while running:
