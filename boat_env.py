@@ -42,14 +42,17 @@ class Boat:
         self.angular_velocity = initial_angular_velocity
         self.env = env
         self.other_ship_dist = -1
-        self.max_ship_spd = 8
-        self.min_ship_spd = -3
-        self.max_ang_vel = 2
+        self.max_ship_spd = 1.5
+        self.min_ship_spd = -0.5
+        self.max_ang_vel = 1
         self.show_circles = False
-        self.goal_position = (300, 300)
+        self.goal_position = (np.random.uniform(high=self.env.dimensions[0]), np.random.uniform(high=self.env.dimensions[1]))
+        
         
         dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
         off = angular_offset(self, self.goal_position)
+
+        self.prev_dist = dist_to_goal
 
         self.state = [self.speed / self.max_ship_spd, self.angular_velocity / self.max_ang_vel, off / 180, dist_to_goal / self.env.dimensions[0]]
 
@@ -90,16 +93,19 @@ class Boat:
         self.other_ship_dist = math.sqrt((self.env.boat1.x - self.env.boat2.x) ** 2 + (self.env.boat1.y - self.env.boat2.y) ** 2)
         
         dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
+        reward = int(2 * (self.prev_dist - dist_to_goal)) - 1
+        self.prev_dist = dist_to_goal
         off = angular_offset(self, self.goal_position)
 
         self.state = [self.speed / self.max_ship_spd, self.angular_velocity / self.max_ang_vel, off / 180, dist_to_goal / self.env.dimensions[0]]        
 
         #print(self.state)
         #self.state = [self.x / self.env.dimensions[0], self.y / self.env.dimensions[1], math.radians(self.direction), self.speed / self.max_ship_spd]
-        reward = 0#-1
+        #reward = 0#-1
         
+        #reward = -1
         if dist_to_goal < 50:
-            reward = 100
+            reward = 10
         
         return self.state, reward, done, {}
 
@@ -154,7 +160,7 @@ class BoatEnvironment:
         return self.boat1.step(action)
 
     def reset(self):
-        self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, wrap=False)#, initial_direction=np.random.uniform(0, 360))
+        self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, wrap=False, initial_direction=np.random.uniform(0, 360))
         #self.boat1 = Boat((np.random.uniform(high=self.dimensions[0]), np.random.uniform(high=self.dimensions[1])), self, initial_speed=0, initial_direction=np.random.uniform(0, 360), initial_angular_velocity=0, wrap=False)
         return self.boat1.state
 
