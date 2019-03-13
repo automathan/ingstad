@@ -29,30 +29,29 @@ boat2_policy = KeyboardPolicy(Boat.NOP, up=Boat.INC_SPD, down=Boat.DEC_SPD, left
 boat2_state = [0, 0]
 
 spec = NetworkSpecification(hidden_layer_sizes=[12, 8], activation_function=nn.Sigmoid)
-dqn = DQN(env, spec, render=False, epsilon=0.9, alpha=0.001, memory_length=2000, eps_decay=0.99999, anet_path='backup/helge.pkl')
+dqn = DQN(env, spec, render=False, epsilon=0.5, alpha=0.001, memory_length=2000, eps_decay=0.99999)
 
-batch_size = 16
-num_episodes = 3000
-training_iter = 100
+batch_size = 8
+num_episodes = 300
+training_iter = 50
 completion_reward = -1
 
 print('training...')
-#dqn.train(num_episodes, batch_size, training_iter, verbose=True, completion_reward=completion_reward, plot=True, eps_decay=True)
+dqn.train(num_episodes, batch_size, training_iter, verbose=True, completion_reward=completion_reward, plot=True, eps_decay=True)
 boat1_policy = dqn.copy_target_policy(verbose=True)
-#dqn.save('helge.pkl')
+#dqn.save('helge_combi.pkl')
 
-#state = env.reset()
+state = env.reset()
 
-#boat1_policy([0.0, 0.0, 0.0, 0.0])
+boat1_policy([0.0, 0.0, 0.0, 0.0])
 
-
-#plt.plot(dqn.history)
-#plt.show()
+plt.plot(dqn.history)
+plt.show()
 
 state = env.reset()
 while running:
 
-    keys = pg.key.get_pressed() 
+    keys = pg.key.get_pressed()
 
     for event in pg.event.get():
         if event.type == pg.QUIT:

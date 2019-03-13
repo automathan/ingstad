@@ -31,7 +31,7 @@ def angular_offset(boat, target):
     return int(thetadesired)
 
 class Boat:
-    NOP, TURN_CW, TURN_CCW, INC_SPD, DEC_SPD = range(5)
+    NOP, TURN_CW, TURN_CCW, INC_SPD, DEC_SPD, INC_SPD_CW, INC_SPD_CCW, DEC_SPD_CW, DEC_SPD_CCW  = range(9)
     def __init__(self, pos, env, initial_speed=0, initial_acceleration=0, initial_direction=0, initial_angular_velocity=0, wrap=True):
         self.x = pos[0]
         self.y = pos[1]
@@ -64,13 +64,13 @@ class Boat:
     def step(self, action):
         done = False
 
-        if action == Boat.INC_SPD and self.speed < self.max_ship_spd:
+        if (action == Boat.INC_SPD or action == Boat.INC_SPD_CW or action == Boat.INC_SPD_CCW) and self.speed < self.max_ship_spd:
             self.speed += 0.1
-        if action == Boat.DEC_SPD and self.speed > self.min_ship_spd:
+        if (action == Boat.DEC_SPD or action == Boat.DEC_SPD_CW or action == Boat.DEC_SPD_CCW) and self.speed > self.min_ship_spd:
             self.speed -= 0.1
-        if action == Boat.TURN_CCW and self.angular_velocity < self.max_ang_vel:
+        if (action == Boat.TURN_CCW or action == Boat.INC_SPD_CCW or action == Boat.DEC_SPD_CCW) and self.angular_velocity < self.max_ang_vel:
             self.angular_velocity += 0.1
-        if action == Boat.TURN_CW and self.angular_velocity > -self.max_ang_vel:
+        if (action == Boat.TURN_CW or action == Boat.INC_SPD_CW or action == Boat.DEC_SPD_CW) and self.angular_velocity > -self.max_ang_vel:
             self.angular_velocity -= 0.1
 
         self.x += self.speed * math.cos(math.radians(self.direction))
@@ -147,7 +147,11 @@ class BoatEnvironment:
             Boat.TURN_CW,
             Boat.TURN_CCW,
             Boat.INC_SPD,
-            Boat.DEC_SPD
+            Boat.DEC_SPD,
+            Boat.INC_SPD_CW,
+            Boat.INC_SPD_CCW,
+            Boat.DEC_SPD_CW,
+            Boat.DEC_SPD_CCW
         ])
         self.observation_space = np.ndarray((4))
         self.screen = screen
@@ -208,9 +212,9 @@ class BoatEnvironment:
         #print(math.radians(self.boat1.direction), math.radians(self.boat2.direction))
         # boats
         self.boat1.draw(screen)
-        self.boat2.draw(screen)
+        #self.boat2.draw(screen)
 
         text_surface, _ = font.render('1: spd, ang = {:.2f}, {:.2f}'.format(self.boat1.speed, self.boat1.angular_velocity), (0, 0, 0))
         screen.blit(text_surface, (32, 32))
-        text_surface2, _ = font.render('2: spd, ang = {:.2f}, {:.2f}'.format(self.boat2.speed, self.boat2.angular_velocity), (0, 0, 0))
-        screen.blit(text_surface2, (32, 96))
+        #text_surface2, _ = font.render('2: spd, ang = {:.2f}, {:.2f}'.format(self.boat2.speed, self.boat2.angular_velocity), (0, 0, 0))
+        #screen.blit(text_surface2, (32, 96)) 
