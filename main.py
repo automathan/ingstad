@@ -22,33 +22,27 @@ framerate = 30
 
 running = True
 
-boat1_policy = RandomPolicy(env.action_space)
-boat1_state = [0, 0]
-
-boat2_policy = KeyboardPolicy(Boat.NOP, up=Boat.INC_SPD, down=Boat.DEC_SPD, left=Boat.TURN_CCW, right=Boat.TURN_CW)
-boat2_state = [0, 0]
-
 spec = NetworkSpecification(hidden_layer_sizes=[12, 8], activation_function=nn.Sigmoid)
-dqn = DQN(env, spec, render=False, epsilon=0.5, alpha=0.001, memory_length=2000, eps_decay=0.99999)
+dqn = DQN(env, spec, render=False, alpha=0.001, epsilon_end=0.1, memory_length=10000)
 
-batch_size = 8
-num_episodes = 300
-training_iter = 50
-completion_reward = -1
+batch_size = 16
+num_episodes = 200
+training_iter = 240
 
 print('training...')
-dqn.train(num_episodes, batch_size, training_iter, verbose=True, completion_reward=completion_reward, plot=True, eps_decay=True)
+dqn.train(num_episodes, batch_size, training_iter, verbose=True, plot=True, eps_decay=True)
 boat1_policy = dqn.copy_target_policy(verbose=True)
-#dqn.save('helge_combi.pkl')
+boat2_policy = dqn.copy_target_policy(verbose=True)
+dqn.save('alphahelge.pkl')
 
-state = env.reset()
+boat1_state = env.reset()
+boat2_state = boat1_state
 
-boat1_policy([0.0, 0.0, 0.0, 0.0])
+#boat1_policy([0.0, 0.0, 0.0, 0.0])
 
-plt.plot(dqn.history)
+plt.plot(dqn.maxq_history)
 plt.show()
 
-state = env.reset()
 while running:
 
     keys = pg.key.get_pressed()
@@ -60,9 +54,8 @@ while running:
     
     if keys[pg.K_SPACE]: env.reset()
 
-    state, _, done, _ = env.boat1.step(boat1_policy(state))
-    
-    boat2_state, _, _, _ = env.boat2.step(boat2_policy(keys))
+    boat1_state, _, done, _ = env.boat1.step(boat1_policy(boat1_state))
+    boat2_state, _,    _, _ = env.boat2.step(boat2_policy(boat2_state))
     
     env.draw(screen)
     if done:
