@@ -18,47 +18,49 @@ clock = pg.time.Clock()
 
 env = BoatEnvironment(dim, screen)
 
-framerate = 30
+framerate = 2
 
 running = True
 
-spec = NetworkSpecification(hidden_layer_sizes=[12, 8], activation_function=nn.Sigmoid)
-dqn = DQN(env, spec, render=False, alpha=0.001, epsilon_end=0.1, memory_length=10000)
+spec = NetworkSpecification(hidden_layer_sizes=[24, 16], activation_function=nn.Sigmoid)
+dqn = DQN(env, spec, render=False, alpha=0.005, epsilon_end=0.01, memory_length=5000)
 
 batch_size = 16
-num_episodes = 200
+num_episodes = 100
 training_iter = 240
 
 print('training...')
 dqn.train(num_episodes, batch_size, training_iter, verbose=True, plot=True, eps_decay=True)
 boat1_policy = dqn.copy_target_policy(verbose=True)
-boat2_policy = dqn.copy_target_policy(verbose=True)
+boat2_policy = dqn.copy_target_policy(verbose=False)
 dqn.save('alphahelge.pkl')
 
 boat1_state = env.reset()
 boat2_state = boat1_state
 
-#boat1_policy([0.0, 0.0, 0.0, 0.0])
+plt.plot(dqn.history)
+plt.show()
+
+plt.plot(dqn.loss_history)
+plt.show()
 
 plt.plot(dqn.maxq_history)
 plt.show()
 
 while running:
-
-    keys = pg.key.get_pressed()
-
     for event in pg.event.get():
         if event.type == pg.QUIT:
             pg.quit()
             running = False
-    
+
+    keys = pg.key.get_pressed()    
     if keys[pg.K_SPACE]: env.reset()
 
     boat1_state, _, done, _ = env.boat1.step(boat1_policy(boat1_state))
     boat2_state, _,    _, _ = env.boat2.step(boat2_policy(boat2_state))
     
     env.draw(screen)
-    if done:
-        env.reset()
+    if done: env.reset()
+
     pg.display.flip()
     clock.tick(framerate)

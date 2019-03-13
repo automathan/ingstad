@@ -44,7 +44,11 @@ class Boat:
         #dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
         off = angular_offset(self, self.goal_position)
         #self.prev_dist = dist_to_goal
-        self.state = np.zeros(state_size)#np.ndarray(8)#[self.speed / self.max_ship_spd, self.angular_velocity / self.max_ang_vel, off / 180, dist_to_goal / self.env.dimensions[0]]
+        dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
+        goal_off = angular_offset(self, self.goal_position)
+        ship_off = 0#angular_offset(self, (self.env.boat2.x, self.env.boat2.y))
+        self.state = [self.speed / Boat.max_ship_spd, self.angular_velocity / Boat.max_ang_vel, goal_off / 180, dist_to_goal / self.env.dimensions[0], self.other_ship_dist / self.env.dimensions[0], ship_off / 180]        
+        #self.state = np.zeros(state_size)#np.ndarray(8)#[self.speed / self.max_ship_spd, self.angular_velocity / self.max_ang_vel, off / 180, dist_to_goal / self.env.dimensions[0]]
         # [speed, angular velocity, angular goal offset, angular other ship offset]
         # angular offset: how many radians away from heading straight towards a target [-pi, pi], negative is CW
         # self.wrap = wrap # wrap is practical for not going offscreen when using a human agent, but should be penalized in training
@@ -79,6 +83,7 @@ class Boat:
         #self.prev_dist = dist_to_goal
         
         goal_off = angular_offset(self, self.goal_position)
+        #print(goal_off)
         ship_off = angular_offset(self, (self.env.boat2.x, self.env.boat2.y))
         
         self.state = [self.speed / Boat.max_ship_spd, self.angular_velocity / Boat.max_ang_vel, goal_off / 180, dist_to_goal / self.env.dimensions[0], self.other_ship_dist / self.env.dimensions[0], ship_off / 180]        
@@ -91,7 +96,7 @@ class Boat:
             reward = 1 if self.speed > 0 else 0.5
             done = True
         
-        return self.state, reward, done, {}
+        return np.array(self.state), reward, done, {}
 
     def draw(self, screen):
         boat_image = pg.transform.rotate(myimage, self.direction)
@@ -141,7 +146,7 @@ class BoatEnvironment:
     def reset(self):
         self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, wrap=False, initial_direction=np.random.uniform(0, 360), initial_speed=np.random.uniform(Boat.min_ship_spd, Boat.max_ship_spd))
         self.boat2 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2 + 100), self, wrap=False, initial_direction=np.random.uniform(0, 360))
-        return self.boat1.state
+        return np.array(self.boat1.state)
 
     def render(self):
         self.draw(self.screen)
