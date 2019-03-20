@@ -22,18 +22,18 @@ framerate = 2
 
 running = True
 
-spec = NetworkSpecification(hidden_layer_sizes=[24, 16], activation_function=nn.Sigmoid)
-dqn = DQN(env, spec, render=False, alpha=0.005, epsilon_end=0.01, memory_length=5000)
+spec = NetworkSpecification(hidden_layer_sizes=[12, 8], activation_function=nn.Sigmoid)
+dqn = DQN(env, spec, render=False, alpha=0.01, epsilon_start=0.8, epsilon_end=0.01, memory_length=2000)
 
 batch_size = 16
-num_episodes = 100
-training_iter = 240
+num_episodes = 500
+training_iter = 400
 
 print('training...')
 dqn.train(num_episodes, batch_size, training_iter, verbose=True, plot=True, eps_decay=True)
 boat1_policy = dqn.copy_target_policy(verbose=True)
 boat2_policy = dqn.copy_target_policy(verbose=False)
-dqn.save('alphahelge.pkl')
+dqn.save('baat.pkl')
 
 boat1_state = env.reset()
 boat2_state = boat1_state
@@ -44,6 +44,10 @@ plt.show()
 plt.plot(dqn.loss_history)
 plt.show()
 
+plt.plot(dqn.maxq_history)
+plt.show()
+
+plt.plot(dqn.history)
 plt.plot(dqn.maxq_history)
 plt.show()
 

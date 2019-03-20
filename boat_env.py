@@ -41,9 +41,9 @@ class Boat:
         self.other_ship_dist = -1
         self.show_circles = False
         self.goal_position = goal_position
-        #dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
+        dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
         off = angular_offset(self, self.goal_position)
-        #self.prev_dist = dist_to_goal
+        self.prev_dist = dist_to_goal
         dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
         goal_off = angular_offset(self, self.goal_position)
         ship_off = 0#angular_offset(self, (self.env.boat2.x, self.env.boat2.y))
@@ -79,8 +79,8 @@ class Boat:
         self.direction = (self.direction + self.angular_velocity) % 360
         self.other_ship_dist = math.sqrt((self.env.boat1.x - self.env.boat2.x) ** 2 + (self.env.boat1.y - self.env.boat2.y) ** 2)
         dist_to_goal = math.sqrt((self.x - self.goal_position[0]) ** 2 + (self.y - self.goal_position[1]) ** 2)
-        reward = 0 #int(2 * (self.prev_dist - dist_to_goal)) - 1
-        #self.prev_dist = dist_to_goal
+        reward = int(2 * (self.prev_dist - dist_to_goal))# - 1
+        self.prev_dist = dist_to_goal
         
         goal_off = angular_offset(self, self.goal_position)
         #print(goal_off)
@@ -89,11 +89,11 @@ class Boat:
         self.state = [self.speed / Boat.max_ship_spd, self.angular_velocity / Boat.max_ang_vel, goal_off / 180, dist_to_goal / self.env.dimensions[0], self.other_ship_dist / self.env.dimensions[0], ship_off / 180]        
         
         if self.other_ship_dist < self.length / 3:
-            reward = -1
+            reward = -1000
             done = True
 
         if dist_to_goal < 50:
-            reward = 1 if self.speed > 0 else 0.5
+            reward = 1000 if self.speed > 0 else 100
             done = True
         
         return np.array(self.state), reward, done, {}
@@ -144,8 +144,10 @@ class BoatEnvironment:
         return self.boat1.step(action)
 
     def reset(self):
-        self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, wrap=False, initial_direction=np.random.uniform(0, 360), initial_speed=np.random.uniform(Boat.min_ship_spd, Boat.max_ship_spd))
-        self.boat2 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2 + 100), self, wrap=False, initial_direction=np.random.uniform(0, 360))
+        #self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, wrap=False, initial_direction=np.random.uniform(0, 360), initial_speed=np.random.uniform(Boat.min_ship_spd, Boat.max_ship_spd))
+        #self.boat2 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2 + 100), self, wrap=False, initial_direction=np.random.uniform(0, 360))
+        self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] - 1), self, wrap=False, initial_direction=90, initial_speed=np.random.uniform(0, Boat.max_ship_spd))
+        self.boat2 = Boat((self.dimensions[0], self.dimensions[1] // 2), self, wrap=False, initial_direction=180)
         return np.array(self.boat1.state)
 
     def render(self):
