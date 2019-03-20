@@ -135,19 +135,22 @@ class BoatEnvironment:
         ])
         self.observation_space = np.ndarray(state_size)
         self.screen = screen
+        #self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] - 1), self, wrap=False, initial_direction=90, initial_speed=np.random.uniform(0, Boat.max_ship_spd))
+        #self.boat2 = Boat((self.dimensions[0], self.dimensions[1] // 2), self, wrap=False, initial_direction=180, initial_speed=np.random.uniform(0, Boat.max_ship_spd))
         self.boat1 = Boat((np.random.uniform(high=self.dimensions[0]), np.random.uniform(high=self.dimensions[1])), self, initial_speed=0, initial_angular_velocity=0, wrap=False)
         self.boat2 = Boat((dimensions[0] // 2, dimensions[1] // 2), self, initial_speed=0, initial_angular_velocity=0)
         self.wrap = wrap
         self.reset()
 
     def step(self, action):
+        self.boat2.step(Boat.NOP)
         return self.boat1.step(action)
 
     def reset(self):
         #self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2), self, wrap=False, initial_direction=np.random.uniform(0, 360), initial_speed=np.random.uniform(Boat.min_ship_spd, Boat.max_ship_spd))
         #self.boat2 = Boat((self.dimensions[0] // 2, self.dimensions[1] // 2 + 100), self, wrap=False, initial_direction=np.random.uniform(0, 360))
         self.boat1 = Boat((self.dimensions[0] // 2, self.dimensions[1] - 1), self, wrap=False, initial_direction=90, initial_speed=np.random.uniform(0, Boat.max_ship_spd))
-        self.boat2 = Boat((self.dimensions[0], self.dimensions[1] // 2), self, wrap=False, initial_direction=180)
+        self.boat2 = Boat((self.dimensions[0], self.dimensions[1] // 2), self, wrap=False, initial_direction=180, initial_speed=np.random.uniform(0, Boat.max_ship_spd))
         return np.array(self.boat1.state)
 
     def render(self):
