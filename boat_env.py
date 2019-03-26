@@ -29,7 +29,7 @@ state_size = 9
 class Boat:
     max_ship_spd = 1.5
     min_ship_spd = -0.5
-    max_ang_vel = 1
+    max_ang_vel = 0.3
     ship_length = 192
 
     NOP, TURN_CW, TURN_CCW, INC_SPD, DEC_SPD, INC_SPD_CW, INC_SPD_CCW, DEC_SPD_CW, DEC_SPD_CCW  = range(9)
@@ -76,11 +76,11 @@ class Boat:
         self.y += self.speed * -math.sin(math.radians(self.direction))
         self.direction = (self.direction + self.angular_velocity) % 360
         
-        reward = float(self.prev_dist - dist_to_goal) if self.env.intermediate_rewards else -1
-
         other_ship_dist = math.hypot(self.x - self.other_ship.x, self.y - self.other_ship.y)
         dist_to_goal = math.hypot(self.x - self.goal_position[0], self.y - self.goal_position[1])
         
+        reward = float(self.prev_dist - dist_to_goal) if self.env.intermediate_rewards else -1
+
         self.update_state()
 
         # Collision
@@ -115,10 +115,11 @@ class Boat:
         if other_ship_dist < self.length / 3:
             screen.blit(excl_mark, (self.x - 10, self.y - 40))    
 
-    def reset(self, position, speed, direction):
+    def reset(self, position, speed, direction, goal_position):
         self.x, self.y = position
         self.speed = speed
         self.direction = direction
+        self.goal_position = goal_position
 
 class ActionSpace(list):
     n = property(lambda self : len(self))
@@ -158,8 +159,8 @@ class BoatEnvironment:
         return self.boat1.step(action)
 
     def reset(self):
-        self.boat1.reset((self.dimensions[0] // 2, self.dimensions[1]), 0, 0)
-        self.boat2.reset((self.dimensions[0], self.dimensions[1] // 2), 0, 0)
+        self.boat1.reset((self.dimensions[0] // 2, self.dimensions[1]), np.random.uniform(0, Boat.max_ship_spd), 90, (np.random.uniform(self.dimensions[0] * 0.2, self.dimensions[0] * 0.8), 0))
+        self.boat2.reset((self.dimensions[0], self.dimensions[1] // 2), np.random.uniform(0, Boat.max_ship_spd), 180, (0, np.random.uniform(self.dimensions[1] * 0.2, self.dimensions[1] * 0.8)))
         
         self.boat1.update_state()
         self.boat2.update_state()

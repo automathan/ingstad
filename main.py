@@ -16,16 +16,16 @@ pg.init()
 screen = pg.display.set_mode(dim)
 clock = pg.time.Clock()
 
-env = BoatEnvironment(dim, screen)
+env = BoatEnvironment(dim, screen, intermediate_rewards=True)
 
 framerate = 100
 running = True
 
 spec = NetworkSpecification(hidden_layer_sizes=[8], activation_function=nn.Sigmoid)
-dqn = DQN(env, spec, render=True, alpha=0.00001, epsilon_start=0.3, epsilon_end=0.01, memory_length=2000)
+dqn = DQN(env, spec, render=True, alpha=1e-5, epsilon_start=0.7, epsilon_end=0.01, memory_length=2000)
 
 batch_size = 2
-num_episodes = 10
+num_episodes = 200
 training_iter = 400
 
 print('training...')
