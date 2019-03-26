@@ -27,7 +27,7 @@ def angular_offset(boat, target):
 state_size = 9
 
 class Boat:
-    max_ship_spd = 1.5
+    max_ship_spd = 1
     min_ship_spd = -0.5
     max_ang_vel = 0.3
     ship_length = 192
@@ -63,7 +63,17 @@ class Boat:
         other_goal_offset = angular_offset(self.other_ship, self.other_ship.goal_position)
         other_collision_offset = angular_offset(self.other_ship, self.position)
 
-        self.state = [self.speed / Boat.max_ship_spd, self.angular_velocity / Boat.max_ang_vel, goal_offset / 180, dist_to_goal / self.env.dimensions[0], other_ship_dist / self.env.dimensions[0], collision_offset / 180, other_goal_offset / 180, other_collision_offset / 180, self.other_ship.speed]       
+        self.state = [
+            self.speed / Boat.max_ship_spd, 
+            self.angular_velocity / Boat.max_ang_vel, 
+            goal_offset / 180, 
+            dist_to_goal / self.env.dimensions[0], 
+            other_ship_dist / self.env.dimensions[0], 
+            collision_offset / 180, 
+            other_goal_offset / 180, 
+            other_collision_offset / 180, 
+            self.other_ship.speed
+        ]       
         
     def step(self, action):
         done = False
@@ -125,7 +135,7 @@ class ActionSpace(list):
     n = property(lambda self : len(self))
 
 class BoatEnvironment:
-    def __init__(self, dimensions, screen, intermediate_rewards=False):
+    def __init__(self, dimensions, screen, intermediate_rewards=False, multi_agent=True):
         # Environmental parameters
         self.dimensions = dimensions
 
@@ -151,6 +161,7 @@ class BoatEnvironment:
         self.boat1.other_ship = self.boat2
 
         # Misc
+        self.multi_agent = multi_agent
         self.screen = screen
         self.reset()
 
@@ -160,7 +171,7 @@ class BoatEnvironment:
 
     def reset(self):
         self.boat1.reset((self.dimensions[0] // 2, self.dimensions[1]), np.random.uniform(0, Boat.max_ship_spd), 90, (np.random.uniform(self.dimensions[0] * 0.2, self.dimensions[0] * 0.8), 0))
-        self.boat2.reset((self.dimensions[0], self.dimensions[1] // 2), np.random.uniform(0, Boat.max_ship_spd), 180, (0, np.random.uniform(self.dimensions[1] * 0.2, self.dimensions[1] * 0.8)))
+        self.boat2.reset((self.dimensions[0], self.dimensions[1] // 2), np.random.uniform(0, Boat.max_ship_spd) if self.multi_agent else 0, 180, (0, np.random.uniform(self.dimensions[1] * 0.2, self.dimensions[1] * 0.8)))
         
         self.boat1.update_state()
         self.boat2.update_state()

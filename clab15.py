@@ -10,19 +10,19 @@ import torch.nn as nn
 
 import matplotlib.pyplot as plt
 
-dim = (400, 400)
+dim = (720, 720)
 
 pg.init()
 screen = pg.display.set_mode(dim)
 clock = pg.time.Clock()
 
-env = BoatEnvironment(dim, screen, intermediate_rewards=True, multi_agent=False)
+env = BoatEnvironment(dim, screen, intermediate_rewards=True, multi_agent=True)
 
 framerate = 100
 running = True
 
-spec = NetworkSpecification(hidden_layer_sizes=[8], activation_function=nn.Sigmoid)
-dqn = DQN(env, spec, render=True, alpha=1e-5, epsilon_start=0.7, epsilon_end=0.01, memory_length=2000)
+spec = NetworkSpecification(hidden_layer_sizes=[12], activation_function=nn.Sigmoid)
+dqn = DQN(env, spec, render=True, alpha=1e-5, epsilon_start=0.8, epsilon_end=0.01, memory_length=2000)
 
 batch_size = 4
 num_episodes = 100
@@ -32,7 +32,7 @@ print('training...')
 dqn.train(num_episodes, batch_size, training_iter, verbose=True, plot=True, eps_decay=True)
 boat1_policy = dqn.copy_target_policy(verbose=True)
 boat2_policy = dqn.copy_target_policy(verbose=False)
-dqn.save('baat.pkl')
+dqn.save('harbor/ss_clab15.pkl')
 
 boat1_state = env.reset()
 boat2_state = boat1_state
@@ -60,7 +60,7 @@ while running:
     if keys[pg.K_SPACE]: env.reset()
 
     boat1_state, _, done, _ = env.boat1.step(boat1_policy(boat1_state))
-    boat2_state, _,    _, _ = env.boat2.step(boat2_policy(boat2_state))
+    boat2_state, _,    _, _ = env.boat2.step(Boat.NOP)#boat2_policy(boat2_state))
     
     env.draw(screen)
     if done: env.reset()

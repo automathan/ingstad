@@ -21,7 +21,7 @@ env = BoatEnvironment(dim, screen, intermediate_rewards=True, multi_agent=False)
 framerate = 100
 running = True
 
-spec = NetworkSpecification(hidden_layer_sizes=[8], activation_function=nn.Sigmoid)
+spec = NetworkSpecification(hidden_layer_sizes=[6,8,6], activation_function=nn.Sigmoid)
 dqn = DQN(env, spec, render=True, alpha=1e-5, epsilon_start=0.7, epsilon_end=0.01, memory_length=2000)
 
 batch_size = 4
@@ -32,7 +32,7 @@ print('training...')
 dqn.train(num_episodes, batch_size, training_iter, verbose=True, plot=True, eps_decay=True)
 boat1_policy = dqn.copy_target_policy(verbose=True)
 boat2_policy = dqn.copy_target_policy(verbose=False)
-dqn.save('baat.pkl')
+dqn.save('harbor/olebaat.pkl')
 
 boat1_state = env.reset()
 boat2_state = boat1_state
