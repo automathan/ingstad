@@ -10,7 +10,7 @@ import torch.nn as nn
 
 import matplotlib.pyplot as plt
 
-dim = (400, 400)
+dim = (600, 600)
 
 pg.init()
 screen = pg.display.set_mode(dim)
@@ -25,7 +25,7 @@ spec = NetworkSpecification(hidden_layer_sizes=[8], activation_function=nn.Sigmo
 dqn = DQN(env, spec, render=True, alpha=1e-5, epsilon_start=0.7, epsilon_end=0.01, memory_length=2000)
 
 batch_size = 4
-num_episodes = 100
+num_episodes = 40
 training_iter = 1500
 
 print('training...')
@@ -57,7 +57,8 @@ while running:
             running = False
 
     keys = pg.key.get_pressed()    
-    if keys[pg.K_SPACE]: env.reset()
+    
+    if keys[pg.K_SPACE]: env.reset(randomize=True)
 
     boat1_state, _, done, _ = env.boat1.step(boat1_policy(boat1_state))
     boat2_state, _,    _, _ = env.boat2.step(boat2_policy(boat2_state))

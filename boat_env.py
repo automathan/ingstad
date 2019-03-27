@@ -118,7 +118,7 @@ class Boat:
             pg.draw.circle(screen, (255, 250, 0), (int(self.x), int(self.y)), self.length * 4, 1)
         pg.draw.circle(screen, (0, 255, 0), (int(self.goal_position[0]), int(self.goal_position[1])), 50, 1)
         pg.draw.line(screen, (255, 0, 0), (self.x, self.y), (self.other_ship.x, self.other_ship.y))
-        pg.draw.line(screen, (255, 0, 0), (self.x, self.y), (self.x + self.length * math.cos(math.radians(self.direction)), self.y + self.length * -math.sin(math.radians(self.direction))))
+        pg.draw.line(screen, (255, 0, 0), (self.x, self.y), (self.x + 32 * self.length * math.cos(math.radians(self.direction)), self.y + 32 * self.length * -math.sin(math.radians(self.direction))))
         pg.draw.line(screen, (255, 0, 0), (self.x, self.y), self.goal_position)
         
         other_ship_dist = math.hypot(self.x - self.other_ship.x, self.y - self.other_ship.y)
@@ -169,9 +169,23 @@ class BoatEnvironment:
         self.boat2.step(Boat.NOP)
         return self.boat1.step(action)
 
-    def reset(self):
-        self.boat1.reset((self.dimensions[0] // 2, self.dimensions[1]), np.random.uniform(0, Boat.max_ship_spd), 90, (np.random.uniform(self.dimensions[0] * 0.2, self.dimensions[0] * 0.8), 0))
-        self.boat2.reset((self.dimensions[0], self.dimensions[1] // 2), np.random.uniform(0, Boat.max_ship_spd) if self.multi_agent else 0, 180, (0, np.random.uniform(self.dimensions[1] * 0.2, self.dimensions[1] * 0.8)))
+    def reset(self, randomize=True):
+        if randomize:
+            self.boat1.reset(
+                (np.random.uniform(self.dimensions[0] * 0.1, self.dimensions[0] * 0.9), np.random.uniform(self.dimensions[1] * 0.1, self.dimensions[1] * 0.9)), 
+                np.random.uniform(Boat.min_ship_spd, Boat.max_ship_spd), 
+                np.random.uniform(0, 360), 
+                (np.random.uniform(self.dimensions[0] * 0.1, self.dimensions[0] * 0.9), np.random.uniform(self.dimensions[1] * 0.1, self.dimensions[1] * 0.9))
+            )
+            self.boat2.reset(
+                (np.random.uniform(self.dimensions[0] * 0.1, self.dimensions[0] * 0.9), np.random.uniform(self.dimensions[1] * 0.1, self.dimensions[1] * 0.9)), 
+                np.random.uniform(Boat.min_ship_spd, Boat.max_ship_spd), 
+                np.random.uniform(0, 360), 
+                (np.random.uniform(self.dimensions[0] * 0.1, self.dimensions[0] * 0.9), np.random.uniform(self.dimensions[1] * 0.1, self.dimensions[1] * 0.9))
+            )
+        else:
+            self.boat1.reset((self.dimensions[0] // 2, self.dimensions[1]), np.random.uniform(0, Boat.max_ship_spd), 90, (np.random.uniform(self.dimensions[0] * 0.2, self.dimensions[0] * 0.8), 0))
+            self.boat2.reset((self.dimensions[0], self.dimensions[1] // 2), np.random.uniform(0, Boat.max_ship_spd) if self.multi_agent else 0, 180, (0, np.random.uniform(self.dimensions[1] * 0.2, self.dimensions[1] * 0.8)))
         
         self.boat1.update_state()
         self.boat2.update_state()
