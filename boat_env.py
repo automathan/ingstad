@@ -6,7 +6,9 @@ import math
 pg.init()
 myimage = pg.image.load('res/boat.png')
 imagerect = myimage.get_rect()
-font = pgft.SysFont('Comic Sans MS', 28)
+
+font = pgft.SysFont('', 20)
+#font = pgft.SysFont('Comic Sans MS', 28)
 excl_mark, _ = font.render('!!!', (255, 0, 0))
 
 def angular_offset(boat, target):
@@ -43,7 +45,7 @@ class Boat:
         self.x, self.y = pos
         self.speed = initial_speed
         self.direction = initial_direction
-        self.angular_velocity = initial_angular_velocity
+        self.angular_velocity = 0#initial_angular_velocity
         
         # Episode dependent variables
         self.goal_position = goal_position
@@ -77,10 +79,29 @@ class Boat:
         
     def step(self, action):
         done = False
-        if (action == Boat.INC_SPD or action == Boat.INC_SPD_CW or action == Boat.INC_SPD_CCW) and self.speed < Boat.max_ship_spd: self.speed += 0.05
-        if (action == Boat.DEC_SPD or action == Boat.DEC_SPD_CW or action == Boat.DEC_SPD_CCW) and self.speed > Boat.min_ship_spd: self.speed -= 0.05
-        if (action == Boat.TURN_CCW or action == Boat.INC_SPD_CCW or action == Boat.DEC_SPD_CCW) and self.angular_velocity < Boat.max_ang_vel: self.angular_velocity += 0.05
-        if (action == Boat.TURN_CW or action == Boat.INC_SPD_CW or action == Boat.DEC_SPD_CW) and self.angular_velocity > -Boat.max_ang_vel:   self.angular_velocity -= 0.05
+        illegal_action = False
+        if (action == Boat.INC_SPD or action == Boat.INC_SPD_CW or action == Boat.INC_SPD_CCW):
+            if self.speed < Boat.max_ship_spd:
+                self.speed += 0.05
+            else:
+                illegal_action = True
+        if (action == Boat.DEC_SPD or action == Boat.DEC_SPD_CW or action == Boat.DEC_SPD_CCW):
+            if self.speed > Boat.min_ship_spd: 
+                self.speed -= 0.05
+            else:
+                illegal_action = True
+        if (action == Boat.TURN_CCW or action == Boat.INC_SPD_CCW or action == Boat.DEC_SPD_CCW):
+            if self.angular_velocity < Boat.max_ang_vel: 
+                #self.direction += 2 
+                self.angular_velocity += 0.05
+            else:
+                illegal_action = True    
+        if (action == Boat.TURN_CW or action == Boat.INC_SPD_CW or action == Boat.DEC_SPD_CW):
+            if self.angular_velocity > -Boat.max_ang_vel:
+                #self.direction -= 2
+                self.angular_velocity -= 0.05
+            else:
+                illegal_action = True
         
         self.x += self.speed * math.cos(math.radians(self.direction))
         self.y += self.speed * -math.sin(math.radians(self.direction))
@@ -89,8 +110,8 @@ class Boat:
         other_ship_dist = math.hypot(self.x - self.other_ship.x, self.y - self.other_ship.y)
         dist_to_goal = math.hypot(self.x - self.goal_position[0], self.y - self.goal_position[1])
         
-        reward = float(self.prev_dist - dist_to_goal) if self.env.intermediate_rewards else -1
-
+        reward = float(self.prev_dist - dist_to_goal) if self.env.intermediate_rewards else self.env.default_reward
+        if illegal_action: reward = self.env.illegal_penalty
         self.update_state()
 
         # Collision
@@ -135,7 +156,7 @@ class ActionSpace(list):
     n = property(lambda self : len(self))
 
 class BoatEnvironment:
-    def __init__(self, dimensions, screen, intermediate_rewards=False, multi_agent=True):
+    def __init__(self, dimensions, screen, intermediate_rewards=False, multi_agent=True, default_reward=-1, illegal_penalty=-2):
         # Environmental parameters
         self.dimensions = dimensions
 
@@ -163,13 +184,15 @@ class BoatEnvironment:
         # Misc
         self.multi_agent = multi_agent
         self.screen = screen
+        self.default_reward = default_reward
+        self.illegal_penalty = illegal_penalty
         self.reset()
 
     def step(self, action):
         self.boat2.step(Boat.NOP)
         return self.boat1.step(action)
 
-    def reset(self, randomize=True):
+    def reset(self, randomize=False):
         if randomize:
             self.boat1.reset(
                 (np.random.uniform(self.dimensions[0] * 0.1, self.dimensions[0] * 0.9), np.random.uniform(self.dimensions[1] * 0.1, self.dimensions[1] * 0.9)), 
@@ -207,5 +230,6 @@ class BoatEnvironment:
         self.boat1.draw(screen)
         self.boat2.draw(screen)
 
-        text_surface, _ = font.render('1: spd, ang = {:.2f}, {:.2f}'.format(self.boat1.speed, self.boat1.angular_velocity), (0, 0, 0))
-        screen.blit(text_surface, (32, 32))
+        text_surface, _ = font.render('Boat1: spd={:.2f}, angvel={:.2f}'.format(self.boat1.speed, self.boat1.angular_velocity), (0, 0, 0))
+        pg.draw.line(screen, (255, 0, 0), (16, 48), (16 + 16 * math.cos(math.radians(100 * self.boat1.angular_velocity)), 48 + 16 * math.sin(math.radians(100 * self.boat1.angular_velocity))))
+        screen.blit(text_surface, (16, 16))
