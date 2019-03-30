@@ -192,7 +192,9 @@ class BoatEnvironment:
         self.boat2.step(Boat.NOP)
         return self.boat1.step(action)
 
-    def reset(self, randomize=False):
+    def reset(self, randomize=False, randomize_probability=0.4):
+        randomize = np.random.uniform() < randomize_probability
+
         if randomize:
             self.boat1.reset(
                 (np.random.uniform(self.dimensions[0] * 0.1, self.dimensions[0] * 0.9), np.random.uniform(self.dimensions[1] * 0.1, self.dimensions[1] * 0.9)), 
@@ -202,7 +204,7 @@ class BoatEnvironment:
             )
             self.boat2.reset(
                 (np.random.uniform(self.dimensions[0] * 0.1, self.dimensions[0] * 0.9), np.random.uniform(self.dimensions[1] * 0.1, self.dimensions[1] * 0.9)), 
-                np.random.uniform(Boat.min_ship_spd, Boat.max_ship_spd), 
+                np.random.uniform(Boat.min_ship_spd, Boat.max_ship_spd) if self.multi_agent else 0, 
                 np.random.uniform(0, 360), 
                 (np.random.uniform(self.dimensions[0] * 0.1, self.dimensions[0] * 0.9), np.random.uniform(self.dimensions[1] * 0.1, self.dimensions[1] * 0.9))
             )
